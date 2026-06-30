@@ -15,12 +15,12 @@ export function PageLayout() {
   const title = TITLES[pathname] ?? 'Budget Tracket'
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-50 dark:bg-slate-900 transition-colors duration-200">
       <Sidebar />
       <div className="flex flex-col flex-1 ml-64 overflow-hidden">
         <Navbar title={title} />
         <main className="flex-1 overflow-y-auto">
-          <div className="max-w-7xl mx-auto px-6 py-8">
+          <div key={pathname} className="animate-fade-up max-w-7xl mx-auto px-6 py-8">
             <Outlet />
           </div>
         </main>

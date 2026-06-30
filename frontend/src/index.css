@@ -3,31 +3,51 @@
 @tailwind utilities;
 
 @layer base {
-  * {
-    box-sizing: border-box;
-  }
+  * { box-sizing: border-box; }
   body {
-    @apply bg-gray-50 text-gray-900 font-sans antialiased;
+    @apply bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-slate-100 font-sans antialiased transition-colors duration-200;
   }
-  :root {
-    --sidebar-width: 260px;
-  }
+  :root { --sidebar-width: 260px; }
 }
 
 @layer components {
-  .page-container {
-    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8;
-  }
-  .section-title {
-    @apply text-2xl font-semibold text-gray-900 mb-1;
-  }
-  .section-subtitle {
-    @apply text-sm text-gray-500 mb-6;
-  }
+  .page-container { @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8; }
+  .section-title   { @apply text-2xl font-semibold text-gray-900 dark:text-slate-100 mb-1; }
+  .section-subtitle { @apply text-sm text-gray-500 dark:text-slate-400 mb-6; }
 }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
+/* ── Animations ──────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes slideLeft {
+  from { opacity: 0; transform: translateX(12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes pulse-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%       { transform: scale(1.4); opacity: 0.6; }
+}
+
+.animate-fade-up   { animation: fadeUp   0.35s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.animate-scale-in  { animation: scaleIn  0.28s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.animate-slide-left { animation: slideLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* Stagger helpers */
+.stagger-1 { animation-delay: 50ms; }
+.stagger-2 { animation-delay: 100ms; }
+.stagger-3 { animation-delay: 150ms; }
+.stagger-4 { animation-delay: 200ms; }
+.stagger-5 { animation-delay: 250ms; }
+.stagger-6 { animation-delay: 300ms; }
+
+/* ── Scrollbar ───────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { @apply bg-transparent; }
-::-webkit-scrollbar-thumb { @apply bg-gray-300 rounded-full; }
-::-webkit-scrollbar-thumb:hover { @apply bg-gray-400; }
+::-webkit-scrollbar-thumb { @apply bg-gray-300 dark:bg-slate-600 rounded-full; }
+::-webkit-scrollbar-thumb:hover { @apply bg-gray-400 dark:bg-slate-500; }
