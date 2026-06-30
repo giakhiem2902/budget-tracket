@@ -1,0 +1,18 @@
+| Thành phần     | Ngôn ngữ/Công nghệ                   |
+| -------------- | ------------------------------------ |
+| Frontend       | JavaScript (ReactJS)             |
+| Giao diện      | HTML5 + CSS3                   |
+| Gọi API        | Axios (JavaScript)               |
+| Backend        | C# (.NET 8 ASP.NET Core Web API) |
+| AWS Lambda     | C# (.NET 8)                    |
+| Database       | Amazon DynamoDB (NoSQL)         |
+| Authentication | Amazon Cognito (JWT)                 |
+| Lưu file       | Amazon S3                            |
+| API            | Amazon API Gateway                   |
+| AI             | Amazon Bedrock                       |
+| Queue          | Amazon SQS                           |
+| Monitoring     | Amazon CloudWatch                    |
+| Notification   | Amazon SNS                           |
+| CDN            | Amazon CloudFront                    |
+| DNS            | Amazon Route 53                      |
+| Security       | AWS WAF                              |

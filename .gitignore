@@ -1,0 +1,22 @@
+# ─── Node / Frontend ─────────────────────────────────────────
+node_modules/
+dist/
+.env
+.env.local
+.env.*.local
+
+# ─── .NET / Backend ──────────────────────────────────────────
+bin/
+obj/
+*.user
+.vs/
+*.suo
+.idea/
+
+# ─── AWS SAM build artifacts ─────────────────────────────────
+infrastructure/.aws-sam/
+
+# ─── OS ──────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,378 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Budget Tracket - Serverless Finance Management App
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+  BedrockModelId:
+    Type: String
+    Default: anthropic.claude-3-haiku-20240307-v1:0
+
+Globals:
+  Function:
+    Runtime: dotnet8
+    Timeout: 30
+    MemorySize: 512
+    Environment:
+      Variables:
+        DYNAMODB_TABLE: !Ref MainTable
+        S3_BUCKET_RECEIPTS: !Ref ReceiptsBucket
+        COGNITO_USER_POOL_ID: !Ref CognitoUserPool
+        BEDROCK_MODEL_ID: !Ref BedrockModelId
+        SNS_TOPIC_ARN: !Ref NotificationTopic
+        APP_REGION: !Ref AWS::Region
+
+Resources:
+  # ─── Cognito ──────────────────────────────────────────────────
+  CognitoUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub "budget-tracket-${Environment}"
+      AutoVerifiedAttributes: [email]
+      UsernameAttributes: [email]
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+          RequireUppercase: false
+      Schema:
+        - Name: name
+          AttributeDataType: String
+          Mutable: true
+          Required: true
+
+  CognitoUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: !Sub "budget-tracket-web-${Environment}"
+      UserPoolId: !Ref CognitoUserPool
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+        - ALLOW_USER_SRP_AUTH
+      AccessTokenValidity: 1
+      RefreshTokenValidity: 30
+      TokenValidityUnits:
+        AccessToken: hours
+        RefreshToken: days
+
+  # ─── API Gateway ─────────────────────────────────────────────
+  BudgetApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref Environment
+      Name: !Sub "budget-tracket-api-${Environment}"
+      Cors:
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key'"
+        AllowOrigin: "'*'"
+      Auth:
+        DefaultAuthorizer: CognitoAuthorizer
+        AddDefaultAuthorizerToCorsPreflight: false
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: !GetAtt CognitoUserPool.Arn
+
+  # ─── Lambda Functions ─────────────────────────────────────────
+  TransactionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "budget-tracket-transactions-${Environment}"
+      CodeUri: ../backend/src/BudgetTracket.Lambda/
+      Handler: BudgetTracket.Lambda::BudgetTracket.Lambda.Functions.TransactionFunction::HandleAsync
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MainTable
+        - S3CrudPolicy:
+            BucketName: !Ref ReceiptsBucket
+      Events:
+        ListCreate:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BudgetApi
+            Path: /api/v1/transactions
+            Method: ANY
+        ByIdOrReceipt:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BudgetApi
+            Path: /api/v1/transactions/{id}
+            Method: ANY
+        Receipt:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BudgetApi
+            Path: /api/v1/transactions/{id}/receipt
+            Method: POST
+
+  BudgetFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "budget-tracket-budgets-${Environment}"
+      CodeUri: ../backend/src/BudgetTracket.Lambda/
+      Handler: BudgetTracket.Lambda::BudgetTracket.Lambda.Functions.BudgetFunction::HandleAsync
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MainTable
+      Events:
+        Budgets:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BudgetApi
+            Path: /api/v1/budgets
+            Method: ANY
+        BudgetsByMonth:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BudgetApi
+            Path: /api/v1/budgets/{year}/{month}
+            Method: GET
+
+  ReportFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "budget-tracket-reports-${Environment}"
+      CodeUri: ../backend/src/BudgetTracket.Lambda/
+      Handler: BudgetTracket.Lambda::BudgetTracket.Lambda.Functions.ReportFunction::HandleAsync
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref MainTable
+      Events:
+        ReportsSummary:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BudgetApi
+            Path: /api/v1/reports/summary
+            Method: GET
+        ReportsTrends:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BudgetApi
+            Path: /api/v1/reports/trends
+            Method: GET
+        ReportsCategories:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BudgetApi
+            Path: /api/v1/reports/categories
+            Method: GET
+
+  AiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "budget-tracket-ai-${Environment}"
+      CodeUri: ../backend/src/BudgetTracket.Lambda/
+      Handler: BudgetTracket.Lambda::BudgetTracket.Lambda.Functions.AiFunction::HandleAsync
+      Timeout: 60
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref MainTable
+        - Statement:
+            - Effect: Allow
+              Action: bedrock:InvokeModel
+              Resource: !Sub "arn:aws:bedrock:${AWS::Region}::foundation-model/${BedrockModelId}"
+      Events:
+        AiCategorize:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BudgetApi
+            Path: /api/v1/ai/categorize
+            Method: POST
+        AiInsights:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BudgetApi
+            Path: /api/v1/ai/insights
+            Method: GET
+
+  NotificationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "budget-tracket-notifications-${Environment}"
+      CodeUri: ../backend/src/BudgetTracket.Lambda/
+      Handler: BudgetTracket.Lambda::BudgetTracket.Lambda.Functions.NotificationFunction::HandleAsync
+      Policies:
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt NotificationTopic.TopicName
+      Events:
+        SQSTrigger:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt NotificationQueue.Arn
+            BatchSize: 10
+
+  # ─── DynamoDB ─────────────────────────────────────────────────
+  MainTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "BudgetTracket-${Environment}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  # ─── S3 ───────────────────────────────────────────────────────
+  ReceiptsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "budget-tracket-receipts-${Environment}-${AWS::AccountId}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: ['*']
+            AllowedMethods: [PUT]
+            AllowedOrigins: ['*']
+            MaxAge: 3000
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldReceipts
+            Status: Enabled
+            ExpirationInDays: 365
+
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "budget-tracket-frontend-${Environment}-${AWS::AccountId}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  # ─── CloudFront ───────────────────────────────────────────────
+  FrontendOAC:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub "budget-tracket-oac-${Environment}"
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Statement:
+          - Sid: AllowCloudFront
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub "${FrontendBucket.Arn}/*"
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${FrontendDistribution}"
+
+  FrontendDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Comment: !Sub "Budget Tracket - ${Environment}"
+        Enabled: true
+        DefaultRootObject: index.html
+        PriceClass: PriceClass_100
+        Origins:
+          - Id: S3FrontendOrigin
+            DomainName: !GetAtt FrontendBucket.RegionalDomainName
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+            OriginAccessControlId: !GetAtt FrontendOAC.Id
+        DefaultCacheBehavior:
+          TargetOriginId: S3FrontendOrigin
+          ViewerProtocolPolicy: redirect-to-https
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+          Compress: true
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 0
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 0
+
+  # ─── SQS ──────────────────────────────────────────────────────
+  NotificationQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "budget-tracket-notifications-${Environment}"
+      VisibilityTimeout: 60
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt NotificationDLQ.Arn
+        maxReceiveCount: 3
+
+  NotificationDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "budget-tracket-notifications-dlq-${Environment}"
+
+  # ─── SNS ──────────────────────────────────────────────────────
+  NotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "budget-tracket-alerts-${Environment}"
+
+  # ─── CloudWatch Alarms ────────────────────────────────────────
+  LambdaErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "budget-tracket-lambda-errors-${Environment}"
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref NotificationTopic
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway endpoint URL
+    Value: !Sub "https://${BudgetApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}"
+    Export:
+      Name: !Sub "budget-tracket-api-url-${Environment}"
+  CognitoUserPoolId:
+    Description: Cognito User Pool ID
+    Value: !Ref CognitoUserPool
+    Export:
+      Name: !Sub "budget-tracket-cognito-pool-${Environment}"
+  CognitoClientId:
+    Description: Cognito App Client ID
+    Value: !Ref CognitoUserPoolClient
+    Export:
+      Name: !Sub "budget-tracket-cognito-client-${Environment}"
+  FrontendBucketName:
+    Description: S3 bucket for frontend deployment
+    Value: !Ref FrontendBucket
+  CloudFrontUrl:
+    Description: CloudFront distribution URL (HTTPS)
+    Value: !Sub "https://${FrontendDistribution.DomainName}"
+    Export:
+      Name: !Sub "budget-tracket-cloudfront-url-${Environment}"
+  DynamoDBTableName:
+    Description: DynamoDB table name
+    Value: !Ref MainTable

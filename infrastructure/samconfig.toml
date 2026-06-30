@@ -1,0 +1,21 @@
+# SAM CLI config — Budget Tracket
+
+version = 0.1
+
+[default.global.parameters]
+stack_name = "budget-tracket-dev"
+
+[default.build.parameters]
+cached = true
+parallel = true
+
+[default.deploy.parameters]
+stack_name        = "budget-tracket-dev"
+region            = "ap-southeast-1"
+confirm_changeset = false
+capabilities      = "CAPABILITY_IAM"
+resolve_s3        = true
+parameter_overrides = [
+  "Environment=dev",
+  "BedrockModelId=anthropic.claude-3-haiku-20240307-v1:0"
+]
