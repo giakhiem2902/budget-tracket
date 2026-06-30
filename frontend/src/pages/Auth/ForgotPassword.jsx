@@ -52,23 +52,23 @@ export function ForgotPassword() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-white flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-white dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-4 transition-colors duration-200">
+      <div className="w-full max-w-md animate-fade-up">
         <div className="text-center mb-8">
           <div className="w-14 h-14 rounded-2xl bg-primary-500 flex items-center justify-center mx-auto mb-4 shadow-lg">
             <Wallet className="w-7 h-7 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">
             Budget<span className="text-primary-500">Tracket</span>
           </h1>
-          <p className="text-gray-500 mt-1 text-sm">Quản lý tài chính thông minh</p>
+          <p className="text-gray-500 dark:text-slate-400 mt-1 text-sm">Quản lý tài chính thông minh</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-card p-8">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card dark:shadow-black/30 p-8">
           {step === 1 ? (
             <>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Quên mật khẩu</h2>
-              <p className="text-sm text-gray-500 mb-6">Nhập email để nhận mã xác thực</p>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-slate-100 mb-2">Quên mật khẩu</h2>
+              <p className="text-sm text-gray-500 dark:text-slate-400 mb-6">Nhập email để nhận mã xác thực</p>
 
               {error && (
                 <div className="bg-danger-50 text-danger-600 text-sm px-4 py-3 rounded-xl mb-4">{error}</div>
@@ -84,9 +84,9 @@ export function ForgotPassword() {
             </>
           ) : (
             <>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Đặt lại mật khẩu</h2>
-              <p className="text-sm text-gray-500 mb-6">
-                Kiểm tra email <span className="font-medium text-gray-700">{email}</span> để lấy mã xác thực
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-slate-100 mb-2">Đặt lại mật khẩu</h2>
+              <p className="text-sm text-gray-500 dark:text-slate-400 mb-6">
+                Kiểm tra email <span className="font-medium text-gray-700 dark:text-slate-200">{email}</span> để lấy mã xác thực
               </p>
 
               {error && (
@@ -105,14 +105,14 @@ export function ForgotPassword() {
                 </Button>
                 <button type="button"
                   onClick={() => { setStep(1); setError('') }}
-                  className="w-full text-sm text-gray-400 hover:text-gray-600 text-center mt-2">
+                  className="w-full text-sm text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 text-center mt-2">
                   Gửi lại mã xác thực
                 </button>
               </form>
             </>
           )}
 
-          <p className="text-center text-sm text-gray-500 mt-6">
+          <p className="text-center text-sm text-gray-500 dark:text-slate-400 mt-6">
             <Link to="/login" className="text-primary-500 hover:underline">← Quay lại đăng nhập</Link>
           </p>
         </div>

@@ -55,24 +55,24 @@ export function Register() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-white flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-white dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-4 transition-colors duration-200">
+      <div className="w-full max-w-md animate-fade-up">
         <div className="text-center mb-8">
           <div className="w-14 h-14 rounded-2xl bg-primary-500 flex items-center justify-center mx-auto mb-4 shadow-lg">
             <Wallet className="w-7 h-7 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">
             Budget<span className="text-primary-500">Tracket</span>
           </h1>
-          <p className="text-gray-500 mt-1 text-sm">
+          <p className="text-gray-500 dark:text-slate-400 mt-1 text-sm">
             {step === 'register' ? 'Bắt đầu hành trình tài chính của bạn' : 'Xác thực tài khoản'}
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-card p-8">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-card dark:shadow-black/30 p-8">
           {step === 'register' ? (
             <>
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Tạo tài khoản</h2>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-slate-100 mb-6">Tạo tài khoản</h2>
 
               {error && (
                 <div className="bg-danger-50 text-danger-600 text-sm px-4 py-3 rounded-xl mb-4">{error}</div>
@@ -90,16 +90,16 @@ export function Register() {
                 <Button type="submit" className="w-full" loading={loading}>Tạo tài khoản</Button>
               </form>
 
-              <p className="text-center text-sm text-gray-500 mt-6">
+              <p className="text-center text-sm text-gray-500 dark:text-slate-400 mt-6">
                 Đã có tài khoản?{' '}
                 <Link to="/login" className="text-primary-500 font-medium hover:underline">Đăng nhập</Link>
               </p>
             </>
           ) : (
             <>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Xác thực email</h2>
-              <p className="text-sm text-gray-500 mb-6">
-                Chúng tôi đã gửi mã 6 chữ số đến <span className="font-medium text-gray-700">{form.email}</span>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-slate-100 mb-2">Xác thực email</h2>
+              <p className="text-sm text-gray-500 dark:text-slate-400 mb-6">
+                Chúng tôi đã gửi mã 6 chữ số đến <span className="font-medium text-gray-700 dark:text-slate-200">{form.email}</span>
               </p>
 
               {error && (
@@ -117,7 +117,7 @@ export function Register() {
                 <button onClick={handleResend} className="text-primary-500 hover:underline">
                   Gửi lại mã
                 </button>
-                <button onClick={() => setStep('register')} className="text-gray-400 hover:underline">
+                <button onClick={() => setStep('register')} className="text-gray-400 dark:text-slate-500 hover:underline">
                   Đổi email
                 </button>
               </div>
