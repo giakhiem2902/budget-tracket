@@ -7,7 +7,7 @@ import { reportService } from '@/services/reports'
 import { formatCurrency } from '@/utils/formatters'
 
 const EMPTY = {
-  summary: { totalIncome: 0, totalExpense: 0, savings: 0 },
+  summary: { income: 0, expense: 0, savings: 0 },
   trends: [],
   categories: [],
 }
@@ -42,8 +42,8 @@ export function Reports() {
       {/* Summary row */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: 'Tổng thu',   value: data.summary.totalIncome,  color: 'text-success-500' },
-          { label: 'Tổng chi',   value: data.summary.totalExpense, color: 'text-danger-500'  },
+          { label: 'Tổng thu',   value: data.summary.income,  color: 'text-success-500' },
+          { label: 'Tổng chi',   value: data.summary.expense, color: 'text-danger-500'  },
           { label: 'Tiết kiệm', value: data.summary.savings,      color: 'text-primary-500' },
         ].map(({ label, value, color }) => (
           <Card key={label} className="text-center">
