@@ -24,7 +24,19 @@ public class UserProfile
     public string Currency { get; set; } = "VND";
 
     [DynamoDBProperty]
+    public bool NotifyBudgetAlert { get; set; } = true;
+
+    [DynamoDBProperty]
+    public bool NotifyMonthlyReport { get; set; } = true;
+
+    [DynamoDBProperty]
+    public bool NotifyAnomaly { get; set; } = true;
+
+    [DynamoDBProperty]
     public string CreatedAt { get; set; } = DateTime.UtcNow.ToString("O");
+
+    [DynamoDBProperty]
+    public string UpdatedAt { get; set; } = DateTime.UtcNow.ToString("O");
 
     public static string BuildPK(string userId) => $"USER#{userId}";
 }

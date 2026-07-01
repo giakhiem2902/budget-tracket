@@ -29,12 +29,14 @@ public static class Startup
         // Repositories
         services.AddScoped<ITransactionRepository, TransactionRepository>();
         services.AddScoped<IBudgetRepository, BudgetRepository>();
+        services.AddScoped<IUserProfileRepository, UserProfileRepository>();
 
         // Services
         services.AddScoped<ITransactionService, TransactionService>();
         services.AddScoped<IBudgetService, BudgetService>();
         services.AddScoped<IReportService, ReportService>();
         services.AddScoped<IAiService, AiService>();
+        services.AddScoped<IUserProfileService, UserProfileService>();
 
         // Logging (CloudWatch via stdout)
         services.AddLogging(b => b.AddConsole().SetMinimumLevel(LogLevel.Information));

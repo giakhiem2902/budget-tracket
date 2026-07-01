@@ -194,6 +194,23 @@ Resources:
             Path: /api/v1/ai/insights
             Method: GET
 
+  ProfileFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "budget-tracket-profile-${Environment}"
+      CodeUri: ../backend/src/BudgetTracket.Lambda/
+      Handler: BudgetTracket.Lambda::BudgetTracket.Lambda.Functions.ProfileFunction::HandleAsync
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MainTable
+      Events:
+        Profile:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BudgetApi
+            Path: /api/v1/profile
+            Method: ANY
+
   NotificationFunction:
     Type: AWS::Serverless::Function
     Properties:

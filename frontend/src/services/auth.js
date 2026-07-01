@@ -146,6 +146,20 @@ export const authService = {
     })
   },
 
+  deleteUser() {
+    return new Promise((resolve, reject) => {
+      const user = userPool.getCurrentUser()
+      if (!user) return reject(new Error('Chưa đăng nhập'))
+      user.getSession((err) => {
+        if (err) return reject(new Error(cognitoMsg(err)))
+        user.deleteUser((err2) => {
+          if (err2) return reject(new Error(cognitoMsg(err2)))
+          resolve()
+        })
+      })
+    })
+  },
+
   logout() {
     const user = userPool.getCurrentUser()
     if (user) user.signOut()
