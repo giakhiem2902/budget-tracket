@@ -354,6 +354,106 @@ Resources:
     Properties:
       TopicName: !Sub "budget-tracket-alerts-${Environment}"
 
+  # ─── WAF (API Gateway — REGIONAL) ───────────────────────────
+  ApiWafWebAcl:
+    Type: AWS::WAFv2::WebACL
+    Properties:
+      Name: !Sub "budget-tracket-api-waf-${Environment}"
+      Scope: REGIONAL
+      DefaultAction:
+        Allow: {}
+      VisibilityConfig:
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: true
+        MetricName: !Sub "budget-tracket-waf-${Environment}"
+      Rules:
+        # ── Managed rule sets ────────────────────────────────────
+        - Name: CommonRuleSet
+          Priority: 0
+          OverrideAction:
+            None: {}
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesCommonRuleSet
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Sub "waf-common-${Environment}"
+
+        - Name: SQLiRuleSet
+          Priority: 1
+          OverrideAction:
+            None: {}
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesSQLiRuleSet
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Sub "waf-sqli-${Environment}"
+
+        - Name: KnownBadInputsRuleSet
+          Priority: 2
+          OverrideAction:
+            None: {}
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesKnownBadInputsRuleSet
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Sub "waf-bad-inputs-${Environment}"
+
+        # ── Rate limit: AI endpoints (expensive Bedrock calls) ───
+        - Name: RateLimitAiEndpoints
+          Priority: 3
+          Action:
+            Block: {}
+          Statement:
+            RateBasedStatement:
+              Limit: 100          # 100 req / 5-min window per IP (WAFv2 minimum)
+              AggregateKeyType: IP
+              ScopeDownStatement:
+                ByteMatchStatement:
+                  SearchString: "/ai/"
+                  FieldToMatch:
+                    UriPath: {}
+                  TextTransformations:
+                    - Priority: 0
+                      Type: LOWERCASE
+                  PositionalConstraint: CONTAINS
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Sub "waf-rate-ai-${Environment}"
+
+        # ── Rate limit: all API calls (general DDoS protection) ──
+        - Name: RateLimitAllRequests
+          Priority: 4
+          Action:
+            Block: {}
+          Statement:
+            RateBasedStatement:
+              Limit: 2000         # 2000 req / 5-min window per IP
+              AggregateKeyType: IP
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Sub "waf-rate-all-${Environment}"
+
+  # Associate WAF WebACL with API Gateway stage
+  ApiWafAssociation:
+    Type: AWS::WAFv2::WebACLAssociation
+    Properties:
+      ResourceArn: !Sub
+        - "arn:aws:apigateway:${AWS::Region}::/restapis/${ApiId}/stages/${Env}"
+        - ApiId: !Ref BudgetApi
+          Env: !Ref Environment
+      WebACLArn: !GetAtt ApiWafWebAcl.Arn
+
   # ─── CloudWatch Alarms ────────────────────────────────────────
   LambdaErrorAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -396,3 +496,8 @@ Outputs:
   DynamoDBTableName:
     Description: DynamoDB table name
     Value: !Ref MainTable
+  WafWebAclArn:
+    Description: WAF WebACL ARN (REGIONAL — attached to API Gateway)
+    Value: !GetAtt ApiWafWebAcl.Arn
+    Export:
+      Name: !Sub "budget-tracket-waf-arn-${Environment}"
