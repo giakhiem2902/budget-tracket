@@ -3,6 +3,7 @@ using Amazon.DynamoDBv2.DataModel;
 using Amazon.S3;
 using Amazon.BedrockRuntime;
 using Amazon.SimpleNotificationService;
+using Amazon.SQS;
 using BudgetTracket.Core.Repositories;
 using BudgetTracket.Core.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +24,7 @@ public static class Startup
         services.AddSingleton<IAmazonS3, AmazonS3Client>();
         services.AddSingleton<IAmazonBedrockRuntime, AmazonBedrockRuntimeClient>();
         services.AddSingleton<IAmazonSimpleNotificationService, AmazonSimpleNotificationServiceClient>();
+        services.AddSingleton<IAmazonSQS, AmazonSQSClient>();
 
         // Repositories
         services.AddScoped<ITransactionRepository, TransactionRepository>();

@@ -23,6 +23,7 @@ Globals:
         COGNITO_USER_POOL_ID: !Ref CognitoUserPool
         BEDROCK_MODEL_ID: !Ref BedrockModelId
         SNS_TOPIC_ARN: !Ref NotificationTopic
+        SQS_QUEUE_URL: !Ref NotificationQueue
         APP_REGION: !Ref AWS::Region
 
 Resources:
@@ -91,6 +92,8 @@ Resources:
             TableName: !Ref MainTable
         - S3CrudPolicy:
             BucketName: !Ref ReceiptsBucket
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt NotificationQueue.QueueName
       Events:
         ListCreate:
           Type: Api

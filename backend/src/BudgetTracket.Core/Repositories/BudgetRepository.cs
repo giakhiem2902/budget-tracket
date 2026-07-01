@@ -52,12 +52,14 @@ public class BudgetRepository : IBudgetRepository
         return budget;
     }
 
-    public async Task IncrementSpentAsync(string userId, string yearMonth, string category, decimal amount, CancellationToken ct = default)
+    public async Task<Budget?> IncrementSpentAsync(string userId, string yearMonth, string category, decimal amount, CancellationToken ct = default)
     {
         var budget = await GetAsync(userId, yearMonth, category, ct);
-        if (budget is null) return;
+        if (budget is null) return null;
         budget.Spent += amount;
+        if (budget.Spent < 0) budget.Spent = 0;
         await SaveAsync(budget, ct);
         _logger.LogInformation("Budget {Category} spent incremented by {Amount}", category, amount);
+        return budget;
     }
 }
